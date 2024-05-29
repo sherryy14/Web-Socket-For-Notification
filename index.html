@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Index Page</title>
+</head>
+<body>
+    <!-- Your form here -->
+    <form id="notificationForm">
+        <label for="firstName">First Name:</label>
+        <input type="text" id="firstName" name="firstName" required><br><br>
+        <label for="lastName">Last Name:</label>
+        <input type="text" id="lastName" name="lastName" required><br><br>
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" required><br><br>
+        <label for="message">Message:</label><br>
+        <textarea id="message" name="message" rows="4" cols="50" required></textarea><br><br>
+        <button type="submit">Submit</button>
+    </form>
+
+    <script>
+        const ws = new WebSocket('ws://localhost:8080');
+        const notificationForm = document.getElementById('notificationForm');
+
+        notificationForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const formData = {
+                firstName: document.getElementById('firstName').value,
+                lastName: document.getElementById('lastName').value,
+                email: document.getElementById('email').value,
+                message: document.getElementById('message').value
+            };
+
+            ws.send(JSON.stringify(formData));
+
+            // Reset form fields
+            notificationForm.reset();
+        });
+    </script>
+</body>
+</html>

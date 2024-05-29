@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Display Page</title>
+</head>
+<style>
+    #notifications li{
+        padding: 5px;
+        margin: 5px;
+        background-color: rgb(219, 220, 221);
+    }
+    #notifications button{
+        margin-left: 20px;
+        padding: 5px;
+        border: none;
+        border-radius: 5px;
+        color: aliceblue;
+        cursor: pointer;
+        background-color: black;
+    }
+    #notifications button:hover{
+        
+        background-color: rgba(0, 0, 0, 0.897);
+        box-shadow: 0 0  2px 3px rgba(0, 0, 0, 0.267);
+    }
+</style>
+<body>
+    <h1>Received Notifications</h1>
+    <ul id="notifications"></ul>
+
+    <script>
+        function fetchAndDisplayData() {
+            fetch('fetch_data.php')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok ' + response.statusText);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const notificationsList = document.getElementById('notifications');
+                    notificationsList.innerHTML = ''; // Clear previous notifications
+
+                    data.forEach(item => {
+                        const listItem = document.createElement('li');
+                        listItem.innerHTML = `
+                            Name: ${item.firstname} ${item.lastname}, 
+                            Email: ${item.email}, 
+                            Message: ${item.message} 
+                            <button onclick="removeNotification(${item.id}, this)">Mark As Read</button>
+                        `;
+                        notificationsList.appendChild(listItem);
+                    });
+                })
+                .catch(error => console.error('Error fetching data:', error));
+        }
+
+        function removeNotification(id, button) {
+            fetch(`remove_notification.php?id=${id}`, { method: 'POST' })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok ' + response.statusText);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        const listItem = button.parentElement;
+                        listItem.parentElement.removeChild(listItem);
+                    } else {
+                        console.error('Error removing notification:', data.error);
+                    }
+                })
+                .catch(error => console.error('Error removing notification:', error));
+        }
+
+        fetchAndDisplayData(); // Fetch and display data when page loads
+
+        // WebSocket connection
+        const ws = new WebSocket('ws://localhost:8080');
+
+        ws.onmessage = function(event) {
+            const data = event.data;
+
+            // Check if data is a Blob object
+            if (data instanceof Blob) {
+                const reader = new FileReader();
+
+                reader.onload = function() {
+                    const parsedData = JSON.parse(reader.result);
+                    fetchAndDisplayData(); // Fetch and display data when new message received
+                };
+
+                reader.readAsText(data);
+            } else if (typeof data === 'string') {
+                const parsedData = JSON.parse(data);
+                fetchAndDisplayData(); // Fetch and display data when new message received
+            } else {
+                console.error('Unexpected data format:', data);
+            }
+        };
+
+        ws.onopen = function() {
+            console.log('Connected to WebSocket server');
+        };
+
+        ws.onclose = function() {
+            console.log('Disconnected from WebSocket server');
+        };
+
+        ws.onerror = function(error) {
+            console.error('WebSocket Error: ', error);
+        };
+    </script>
+</body>
+</html>
